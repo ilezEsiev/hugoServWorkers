@@ -7,12 +7,16 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
+	"time"
 )
 
 func main() {
+	fmt.Println("proxy started")
 	r := chi.NewRouter()
 	proxy := NewReverseProxy("hugo", "1313")
+	go WorkerTest()
 	r.Use(proxy.ReverseProxy)
 	r.Get("/api/*", ApiHandler)
 	http.ListenAndServe(":8080", r)
@@ -50,20 +54,29 @@ func (rp *ReverseProxy) ReverseProxy(next http.Handler) http.Handler {
 	})
 }
 
-//
-//const content = ``
-//
-//func WorkerTest() {
-//	t := time.NewTicker(5 * time.Second)
-//	var b byte = 0
-//	for {
-//		select {
-//		case <-t.C:
-//			err := os.WriteFile("/app/static/tasks/_index.md", []byte(fmt.Sprintf(content, b)), 0644)
-//			if err != nil {
-//				log.Println(err)
-//			}
-//			b++
-//		}
-//	}
-//}
+func WorkerTest() {
+	t := time.NewTicker(5 * time.Second)
+	filePath := "/home/ilez/hugoproxy/hugo/content/tasks/_index.md"
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	n := strings.Index(string(file), "Счетчик: 0")
+
+	var b int = 0
+	for {
+		select {
+		case <-t.C:
+			old := "Счетчик: 0"
+			fmt.Println(b)
+			new := fmt.Sprintf("Счетчик: %d", b+1)
+			result := strings.Replace(string(file), old, new, n)
+
+			err = os.WriteFile(filePath, []byte(result), 0644)
+			if err != nil {
+				log.Println(err)
+			}
+			b++
+		}
+	}
+}
