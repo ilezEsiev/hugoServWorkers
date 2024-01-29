@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+	"hugoproxy/proxy/graph"
+	"hugoproxy/proxy/tree"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -16,7 +18,9 @@ func main() {
 	fmt.Println("proxy started")
 	r := chi.NewRouter()
 	proxy := NewReverseProxy("hugo", "1313")
-	go WorkerTest()
+	go WorkerCounter()
+	go graph.GenerateGraph()
+	go tree.TreeWorker()
 	r.Use(proxy.ReverseProxy)
 	r.Get("/api/*", ApiHandler)
 	http.ListenAndServe(":8080", r)
@@ -54,24 +58,24 @@ func (rp *ReverseProxy) ReverseProxy(next http.Handler) http.Handler {
 	})
 }
 
-func WorkerTest() {
+func WorkerCounter() {
 	t := time.NewTicker(5 * time.Second)
-	filePath := "/home/ilez/hugoproxy/hugo/content/tasks/_index.md"
+	filePath := "/app/static/tasks/_index.md"
 	file, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	n := strings.Index(string(file), "Счетчик: 0")
+	old := "Текущее время: 2021-10-13 15:00:00\n\nСчетчик: 0"
+	n := strings.Index(string(file), old)
 
-	var b int = 0
+	var b int
 	for {
+		currentTime := time.Now()
+		formattedTime := currentTime.Format("2006-01-02 15:04:05")
 		select {
 		case <-t.C:
-			old := "Счетчик: 0"
-			fmt.Println(b)
-			new := fmt.Sprintf("Счетчик: %d", b+1)
+			new := fmt.Sprintf("Текущее время: %s\n\nСчетчик: %d", formattedTime, b+1)
 			result := strings.Replace(string(file), old, new, n)
-
 			err = os.WriteFile(filePath, []byte(result), 0644)
 			if err != nil {
 				log.Println(err)

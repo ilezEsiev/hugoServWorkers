@@ -1,5 +1,5 @@
-module studentgit.kata.academy/razzbitb/go-kata/course3/2.server/4.server_http_router_middleware/hugoproxy
+module hugoproxy
 
-go 1.19
+go 1.21
 
-require github.com/go-chi/chi v1.5.5
+require github.com/go-chi/chi v1.5.5 // indirect
